@@ -1,0 +1,59 @@
+module.exports = function (app) {
+  app.post('/api/v1/battle',function (req,res,next) {
+    console.log(req)
+    res.send()
+  })
+  app.get('/api/v1/boardList',function (req,res,next) {
+    res.send([
+      {
+        name:"Candy",
+        winRate:0.3123,
+        userId:'12333124123',
+        challengeState:'playing',
+      },
+      {
+        name:"Ken",
+        winRate:0.721,
+        userId:'12312123123',
+        challengeState:'playing',
+      },
+      {
+        name:"Cici",
+        winRate:0.74123,
+        userId:'12123123124123',
+        challengeState:'playing',
+      },
+      {
+        name:"Cherry",
+        winRate:0.6123,
+        userId:'123123124123',
+        challengeState:'nothing',
+      },
+      {
+        name:"Candy",
+        winRate:0.3123,
+        userId:'12333124123',
+        challengeState:'playing',
+      },
+      {
+        name:"Ken",
+        winRate:0.721,
+        userId:'12312123123',
+        challengeState:'playing',
+      },
+      {
+        name:"Cici",
+        winRate:0.74123,
+        userId:'12123123124123',
+        challengeState:'playing',
+      },
+      {
+        name:"Cherry",
+        winRate:0.6123,
+        userId:'123123124123',
+        challengeState:'nothing',
+      }
+
+    ])
+  })
+}
