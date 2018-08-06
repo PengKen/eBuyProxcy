@@ -1,5 +1,5 @@
 const net = require('net')
-const HOST = '127.0.0.1'
+const HOST = '192.168.43.186'
 const PORT = 10000
 const client = new net.Socket()
 client.setEncoding('utf-8')
@@ -8,6 +8,8 @@ module.exports = function () {
     client.write('hello java')
   })
   client.on('data',function (data) {
-    console.log(data)
+    console.log(data.toString())
   })
 }
+
+

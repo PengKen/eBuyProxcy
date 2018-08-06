@@ -15,7 +15,7 @@ io.use(function(socket, next){
   console.log("token:" + token)
    next()
 });
- io.sockets.on('connection', function (socket) {
+ io.on('connection', function (socket) {
    socket.token = 1;
    sockets.push(socket)
    socket.userId = 'aaa'
