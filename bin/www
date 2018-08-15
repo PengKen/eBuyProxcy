@@ -7,6 +7,8 @@
   var app = require('../app');
   var debug = require('debug')('e-buyprocy:server');
   var http = require('http');
+  const PRODUCT_HOST = '192.168.43.186' //产品价格socket地址
+  const PRODUCT_PORT = 10000 //产品价格socket 端口
   /**
    * Get port from environment and store in Express.
    */
@@ -30,16 +32,45 @@
    * Config Socket.io server
    *
    */
+  var Productsocket = null
+  const net = require('net')
+  var productIo = require('socket.io')(server);
+  productIo.use(function (socket, next) {
+    var token = socket.handshake.query.token;
+    console.log("token:" + token)
+    Productsocket = socket
+    next()
 
-  var io = require('socket.io')(server);
-  io.on('connection', function (socket) {
-    socket.token = 1;
-    socket.userId = 'aaa'
-    socket.emit('message', {hello: socket.userId});
-    setTimeout(function () {
-      socket.disconnect(true);
-    },5000)
+  });
+  const client = new net.Socket()
+  client.setEncoding('utf-8')
+  var curString = ''
+   client.connect(PRODUCT_PORT,PRODUCT_HOST,function () {
+      client.write('hello java')
+   })
+    client.on('data',function (data) {
+      console.log(data)
+      if(data.indexOf('10086') === -1 && curString === ''){
+        curString += data
+      }
+      else if(data.indexOf('10086') !== -1 && curString === ''){
+
+        if(Productsocket)
+          Productsocket.emit('message', {productDetail:data.slice(0,-7)});
+      }
+      else if(data.indexOf('10086') !== -1 && curString !== ''){
+         curString  += data
+
+        if(Productsocket)
+          Productsocket.emit('message', {productDetail:curString.slice(0,-7)});
+        curString = ''
+      }
   })
+
+  client.on('error',function (err) {
+    console.log(err)
+  })
+
   /**
    * Listen on provided port, on all network interfaces.
    */
