@@ -4,71 +4,124 @@
  * Module dependencies.
  */
 
-  var app = require('../app');
-  var debug = require('debug')('e-buyprocy:server');
-  var http = require('http');
-  const PRODUCT_HOST = '192.168.43.186' //产品价格socket地址
-  const PRODUCT_PORT = 10000 //产品价格socket 端口
-  /**
-   * Get port from environment and store in Express.
-   */
+var app = require('../app');
+var debug = require('debug')('e-buyprocy:server');
+var http = require('http');
+const PRODUCT_HOST = '192.168.43.186' //产品价格socket地址
+const PRODUCT_PORT = 10000 //产品价格socket 端口
+const MESSAGE_HOST = '192.168.43.186' // 消息推送socket地址
+const MESSAGE_PORT = 30000 // 消息推送socket端口
+/**
+ * Get port from environment and store in Express.
+ */
 
-  var port = normalizePort(process.env.PORT || '3000');
-  app.set('port', port);
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
 
-  /**
-   *  Create WebSocket server
-   */
+/**
+ *  Create WebSocket server
+ */
+
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Config Socket.io server
+ *
+ */
+const net = require('net')
+var productIo = require('socket.io')(server);
 
 
 
-  /**
-   * Create HTTP server.
-   */
 
-  var server = http.createServer(app);
+
+
+
+
+
+
+
 
   /**
    * Config Socket.io server
    *
    */
-  var Productsocket = null
-  const net = require('net')
-  var productIo = require('socket.io')(server);
+
+
+  /**
+   Product Socket
+   */
+  const productClient = new net.Socket() //本地 product socket 客户端
+  productClient.setEncoding('utf-8')
+  productIo.on('connection', function (socket) {
+    console.log("product connect")
+    socket.emit('message', {productDetail: curString.slice(0, -7)});
+  })
   productIo.use(function (socket, next) {
     var token = socket.handshake.query.token;
-    console.log("token:" + token)
-    Productsocket = socket
+
     next()
-
   });
-  const client = new net.Socket()
-  client.setEncoding('utf-8')
+
   var curString = ''
-   client.connect(PRODUCT_PORT,PRODUCT_HOST,function () {
-      client.write('hello java')
-   })
-    client.on('data',function (data) {
-      console.log(data)
-      if(data.indexOf('10086') === -1 && curString === ''){
-        curString += data
-      }
-      else if(data.indexOf('10086') !== -1 && curString === ''){
+  productClient.connect(PRODUCT_PORT, PRODUCT_HOST, function () {
+    productClient.write('hello java')
+  })
+  productClient.on('data', function (data) {
+    if (data.indexOf('10086') === -1 && curString === '') {
+      curString += data
+    }
+    else if (data.indexOf('10086') !== -1 && curString === '') {
+      productIo.sockets.emit('message', {productDetail: data.slice(0, -7)});
 
-        if(Productsocket)
-          Productsocket.emit('message', {productDetail:data.slice(0,-7)});
-      }
-      else if(data.indexOf('10086') !== -1 && curString !== ''){
-         curString  += data
 
-        if(Productsocket)
-          Productsocket.emit('message', {productDetail:curString.slice(0,-7)});
-        curString = ''
-      }
+    }
+    else if (data.indexOf('10086') !== -1 && curString !== '') {
+      curString += data
+
+      productIo.sockets.emit('message', {productDetail: data.slice(0, -7)});
+      curString = ''
+    }
   })
 
-  client.on('error',function (err) {
+  productClient.on('error', function (err) {
     console.log(err)
+  })
+
+  /**
+   * Message Socket
+   */
+  var messageSocketClients = []
+  var messageIo = require('socket.io')(server, {
+    path: '/message'
+  })
+  messageIo.use(function (socket,next) {
+    console.log("god")
+    console.log(socket.handshake.query.id)
+    socket.messageId = socket.handshake.query.id
+    messageSocketClients.push(socket)
+    next()
+  })
+  messageIo.on('connection', function (socket) {
+    console.log("message connet")
+  })
+
+  const messageClient = new net.Socket()
+  messageClient.setEncoding('utf-8')
+  messageClient.connect(MESSAGE_PORT, MESSAGE_HOST, function () {
+  })
+  messageClient.on('data', function (data) {
+    var message = JSON.parse(data)
+    console.log(message)
+    var targetMessageSocket = messageSocketClients.find(function (obj) { return obj.messageId === message.receiverId })
+    if(targetMessageSocket){
+      targetMessageSocket.emit('message',data);
+    }
   })
 
   /**
@@ -132,11 +185,83 @@
    */
 
   function onListening() {
-    var addr = server.address();
-    var bind = typeof addr === 'string'
-      ? 'pipe ' + addr
-      : 'port ' + addr.port;
-    debug('Listening on ' + bind);
+      var addr = server.address();
+      var bind = typeof addr === 'string'
+        ? 'pipe ' + addr
+        : 'port ' + addr.port;
+      debug('Listening on ' + bind);
+    }
+
+
+
+
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+  server.listen(port);
+  server.on('error', onError);
+  server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+  function normalizePort(val) {
+    var port = parseInt(val, 10);
+
+    if (isNaN(port)) {
+      // named pipe
+      return val;
+    }
+
+    if (port >= 0) {
+      // port number
+      return port;
+    }
+
+    return false;
   }
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+  function onError(error) {
+    if (error.syscall !== 'listen') {
+     throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
 
 

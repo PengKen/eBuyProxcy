@@ -1,5 +1,5 @@
 const net = require('net')
-const HOST = '192.168.8.110'
+const HOST = '172.20.10.6'
 const PORT = 10000
 const client = new net.Socket()
 client.setEncoding('utf-8')

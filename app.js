@@ -8,11 +8,11 @@ var proxy = require('http-proxy-middleware')
 var app = express();
 app.use(express.static(path.join(__dirname, 'dist')));
 app.get('/',function (req,res) {
-  // res.header("Content-Type", "text/html;charset=utf-8");
   res.sendFile(__dirname + '/dist/index.html')
 })
 app.all('*', function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
+res.header('Access-Control-Allow-Credentials',true);
   res.header("Access-Control-Allow-Headers", "X-Requested-With");
   res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS");
   res.header("X-Powered-By", ' 3.2.1')
@@ -28,18 +28,17 @@ app.use('/api',proxy({
     '^/api/v1':''
   }
 }))
-var redis = require('redis');
+//var redis = require('redis');
 
 // 创建客户端；
-client = redis.createClient(6379,'127.0.0.1',{});
+//client = redis.createClient(6379,'127.0.0.1',{});
 //var client = redis.createClient();  //默认使用端口：6379，IP：127.0.0.1
 
-// 连接提示
-client.on("connect", function(error) {
-  console.log("connect....");
-
-})
-require('./controllers/home')(app)
+// // 连接提示
+// client.on("connect", function(error) {
+//   console.log("connect....");
+//
+// })
 // require('./socket/javaSocket')()
 // require('./socket/webSocket')
 // view engine setup
